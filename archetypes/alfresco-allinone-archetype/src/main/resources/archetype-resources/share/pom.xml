@@ -13,25 +13,69 @@
         <version>${version}</version>
     </parent>
 
+    <properties>
+        <!-- Used in share-config-custom.xml when testing.
+             By default points to standard location (local) of Alfresco Repository -->
+        <alfresco.repo.url>http://localhost:8080/alfresco</alfresco.repo.url>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${alfresco.groupId}</groupId>
             <artifactId>${alfresco.share.artifactId}</artifactId>
+            <version>${alfresco.version}</version>
             <type>war</type>
         </dependency>
         <!-- Demonstrating the dependency / installation of the share AMP developed in the 'share-amp' module -->
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>share-amp</artifactId>
+            <artifactId>${rootArtifactId}-share-amp</artifactId>
             <version>${project.version}</version>
             <type>amp</type>
         </dependency>
+        <!-- Uncomment if you are using RM (Records Management) module -->
+        <!-- Make sure to set the correct version for 5.1 with alfresco.rm.version property in parent POM
+        <dependency>
+            <groupId>${alfresco.groupId}</groupId>
+            <artifactId>alfresco-rm-share</artifactId>
+            <version>${alfresco.rm.version}</version>
+            <type>amp</type>
+        </dependency>
+        -->
     </dependencies>
+
     <build>
         <plugins>
             <plugin>
+                <!-- Bring in the Maven Dependency plugin so we can unpack and store the MANIFEST.MF file.
+                     It will be used in the custom Share WAR that is produced by the WAR plugin,
+                     it otherwise gets overwritten by the overlay process. -->
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeTypes>war</includeTypes>
+                            <includeGroupIds>org.alfresco</includeGroupIds>
+                            <includeArtifactIds>share</includeArtifactIds>
+                            <includes>META-INF/MANIFEST.MF</includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-war-plugin</artifactId>
                 <configuration>
+                    <!-- Bring in the MANIFEST.MF file from the original share.war, it contains version information
+                         that is needed for it to operate properly -->
+                    <archive>
+                        <addMavenDescriptor>false</addMavenDescriptor>
+                        <manifestFile>${project.build.directory}/dependency/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
                     <!-- Here is can control the order of overlay of your (WAR, AMP, etc.) dependencies
                         | NOTE: At least one WAR dependency must be uncompressed first 
                         | NOTE: In order to have a dependency effectively added to the WAR you need to 
@@ -39,7 +83,7 @@
                         | NOTE: First-win resource strategy is used by the WAR plugin 
                         -->
                     <overlays>
-                        <!-- The current project customizations -->
+                        <!-- Current project customizations. This is normally empty, since customizations come from the AMPs -->
                         <overlay/>
                         <!-- The Share WAR -->
                         <overlay>
@@ -52,61 +96,20 @@
                         <!-- Add / sort your AMPs here -->
                         <overlay>
                             <groupId>${project.groupId}</groupId>
-                            <artifactId>share-amp</artifactId>
+                            <artifactId>${rootArtifactId}-share-amp</artifactId>
                             <type>amp</type>
                         </overlay>
+                        <!-- Uncomment if you are using RM module -->
+                        <!--
+                        <overlay>
+                            <groupId>${alfresco.groupId}</groupId>
+                            <artifactId>alfresco-rm-share</artifactId>
+                            <type>amp</type>
+                        </overlay>
+                        -->
                     </overlays>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-    <profiles>
-    	<!-- Installs the needed runtime component for an Alfresco RM (Records Management) project -->
-        <profile>
-            <id>rm</id>
-             <properties>
-                <alfresco.rm.artifactId>alfresco-rm-share</alfresco.rm.artifactId>
-            </properties>
-            <build>
-                <plugins>
-                    <!-- Fetch Alfresco RM repo AMP -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>get-rm-share</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>copy</goal>
-                                </goals>
-                                <configuration>
-                                    <artifact>${app.rm.artifact}</artifact>
-                                    <outputDirectory>${app.rm.amps.location}</outputDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <!-- The current AMP artifact is installed into the Alfresco folder using alfresco-maven-plugin -->
-                    <plugin>
-                        <groupId>org.alfresco.maven.plugin</groupId>
-                        <artifactId>alfresco-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>install-rm-share</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>install</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <ampLocation>${app.rm.amps.location}</ampLocation>
-                            <warLocation>${app.rm.war.location}</warLocation>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

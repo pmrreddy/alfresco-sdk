@@ -29,7 +29,7 @@ public class InstallMojo extends AbstractMojo {
     /**
      * The location of the AMP file(s) to be installed. If this location is a
      * folder all AMPs contained in the folder are installed, if it's a file it
-     * get direclty installed on the ${warLocation}
+     * get directly installed on the ${warLocation}
      * 
      * @parameter property="maven.alfresco.ampLocation" default-value="${project.build.directory}/${project.build.finalName}.amp"
      */
@@ -37,9 +37,9 @@ public class InstallMojo extends AbstractMojo {
     
     /**
      * The WAR file or exploded dir to install the AMPs in. If specified
-     * Defaults to <code>"${project.build.directory}/${project.build.finalName}-war</code>
-     * 
-     * @parameter property="maven.alfresco.warLocation" default-value="${project.build.directory}/${project.build.finalName}-war"
+     * Defaults to <code>"${app.amp.client.war.folder}</code>
+     *
+     * @parameter property="maven.alfresco.warLocation" default-value="${app.amp.client.war.folder}"
      */
     private File warLocation;
     
@@ -84,6 +84,7 @@ public class InstallMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (skipAmpInstallation) {
+        	getLog().info("AMP Installation is skipped via configuration");
             return;
         }
         // Checks appropriate input params are in place
@@ -98,19 +99,25 @@ public class InstallMojo extends AbstractMojo {
         if(ampLocation.isDirectory())
         {
             try {
-                mmt.installModules(ampLocation.getAbsolutePath(),
+            	getLog().info("Installing all AMPs from directory " + ampLocation.getAbsolutePath() + " into WAR/exploded webapp at " + warLocation.getAbsolutePath());
+                
+            	mmt.installModules(ampLocation.getAbsolutePath(),
                         warLocation.getAbsolutePath(), false, // preview
                         force, // force install
                         backup); // backup
+                getLog().info("AMPs installed successfully");
+                
             } catch (IOException e) {
                 throw new MojoExecutionException("ampLocation " + ampLocation.getAbsolutePath() + " did not contain AMP files - AMP installation cannot proceed");
             } // backup
         } else if(ampLocation.isFile())
         {
+        	getLog().info("Installing AMP " + ampLocation.getAbsolutePath() + " into WAR/exploded webapp at " + warLocation.getAbsolutePath());
             mmt.installModule(ampLocation.getAbsolutePath(),
                     warLocation.getAbsolutePath(), false, // preview
                     force, // force install
                     backup); // backup
+            getLog().info("AMP installed successfully");
         } else
         {
             throw new MojoFailureException("ampLocation " + ampLocation.getAbsolutePath() + " was neither an AMP file or a folder containing AMP files - AMP installation cannot proceed");

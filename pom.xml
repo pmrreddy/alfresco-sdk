@@ -3,10 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.alfresco.maven</groupId>
     <artifactId>alfresco-sdk-aggregator</artifactId>
-    <version>2.0.0-SNAPSHOT</version>
-    <name>Maven Alfresco SDK</name>
-    <description>This aggregator Project builds all modules required for
-        the Maven Alfresco SDK</description>
+    <version>2.3.0-SNAPSHOT</version>
+    <name>Alfresco SDK</name>
+    <description>This aggregator Project builds all modules required for the Alfresco SDK</description>
     <packaging>pom</packaging>
 
     <url>${maven.site.url}</url>
@@ -31,7 +30,7 @@
         <connection>scm:git:${scm.url.base}.git</connection>
         <developerConnection>scm:git:${scm.url.base}</developerConnection>
         <url>${scm.url.base}</url>
-      <tag>HEAD</tag>
+      <tag>alfresco-sdk-aggregator-2.1.0-beta-1</tag>
   </scm>
 
     <developers>
@@ -65,12 +64,25 @@
         <developer>
             <id>ohej</id>
             <name>Ole Hejlskov</name>
-            <email>ole@magenta-aps.dk</email>
+            <email>ole@phpfreak.dk</email>
             <url>http://ohej.dk/</url>
-            <organization>Magenta</organization>
-            <organizationUrl>http://magenta.dk</organizationUrl>
+            <organization>Alfresco</organization>
+            <organizationUrl>http://www.alfresco.com</organizationUrl>
             <timezone>+1</timezone>
             <roles>
+                <role>Developer</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>gravitonian</id>
+            <name>Martin Bergljung</name>
+            <email>martin.bergljung@alfresco.com</email>
+            <url>http://www.marversolutions.com</url>
+            <organization>Alfresco Software</organization>
+            <organizationUrl>http://www.alfresco.com</organizationUrl>
+            <timezone>+0</timezone>
+            <roles>
+                <role>Architect</role>
                 <role>Developer</role>
             </roles>
         </developer>
@@ -103,7 +115,7 @@
         </contributor>
     </contributors>
 
-    <!-- All the modules of the Maven Alfresco SDK -->
+    <!-- All the modules of the Alfresco SDK -->
     <modules>
         <!-- Modules -->
         <module>modules/alfresco-rad</module>
@@ -119,11 +131,18 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.archetype.version>2.2</maven.archetype.version>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.archetype.version>2.4</maven.archetype.version>
         <alfresco.sdk.parent.version>${project.version}</alfresco.sdk.parent.version>
-        <springloaded.version>1.2.0.RELEASE</springloaded.version>
+        <alfresco.sdk.tests.exclude>*/*-enterprise/*</alfresco.sdk.tests.exclude>
+        <alfresco.community.default.version>5.1.e</alfresco.community.default.version>
+        <alfresco.enterprise.default.version>5.1</alfresco.enterprise.default.version>
+        <alfresco.rm.version>2.3</alfresco.rm.version>
+        <springloaded.version>1.2.5.RELEASE</springloaded.version>
         <scm.url.base>https://github.com/Alfresco/alfresco-sdk</scm.url.base>
     </properties>
+
     <build>
         <pluginManagement>
             <plugins>
@@ -131,6 +150,9 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-archetype-plugin</artifactId>
                     <version>${maven.archetype.version}</version>
+                    <configuration>
+                        <skip>${skipTests}</skip>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -143,11 +165,10 @@
             <extension>
                 <groupId>org.apache.maven.wagon</groupId>
                 <artifactId>wagon-webdav-jackrabbit</artifactId>
-                <version>2.2</version>
+                <version>2.10</version>
             </extension>
         </extensions>
     </build>
-
 
     <repositories>
         <repository>
@@ -167,20 +188,46 @@
 
     <profiles>
         <profile>
+            <id>exclude-enterprise-tests-for-archetypes</id>
+            <activation>
+                <file>
+                    <exists>src/test/resources/projects</exists>
+                </file>
+            </activation>
+            <build>
+                <testResources>
+                    <testResource>
+                        <directory>src/test/resources</directory>
+                        <excludes>
+                            <exclude>${alfresco.sdk.tests.exclude}</exclude>
+                        </excludes>
+                    </testResource>
+                </testResources>
+            </build>
+        </profile>
+        <profile>
+            <id>enterprise-tests</id>
+            <properties>
+                <!-- Sets it to empty, so that also enterprise tests are run -->
+                <alfresco.sdk.tests.exclude />
+            </properties>
+        </profile>
+    	
+        <profile>
             <id>sdk-release</id>
             <properties>
                 <maven.site.url>https://artifacts.alfresco.com/nexus/content/repositories/alfresco-docs/alfresco-sdk-aggregator/latest</maven.site.url>
-                <maven.release.version>2.5</maven.release.version>
+                <maven.release.version>2.5.3</maven.release.version>
                 <maven.release.goals>deploy site-deploy</maven.release.goals>
                 <maven.site.version>3.4</maven.site.version>
-                <maven.changes.version>2.10</maven.changes.version>
+                <maven.changes.version>2.11</maven.changes.version>
             </properties>
             <build>
                 <plugins>
                      <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>2.2.1</version>
+                        <version>2.4</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
@@ -193,20 +240,25 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>2.9.1</version>
+                        <version>2.10.3</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                                <configuration>
+                                    <!-- Add this to build Javadoc with JDK8
+                                    <additionalparam>-Xdoclint:none</additionalparam>
+                                    -->
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.5</version>
+                        <version>1.6</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -225,7 +277,7 @@
                             <preparationGoals>clean install</preparationGoals>
                             <goals>${maven.release.goals}</goals>
                             <autoVersionSubmodules>true</autoVersionSubmodules>
-                            <releaseProfiles>sdk-release</releaseProfiles>
+                            <releaseProfiles>sdk-release,enterprise-tests</releaseProfiles>
                         </configuration>
                     </plugin>
                 </plugins>
